@@ -1,0 +1,22 @@
+{
+    "name": "augustash/module-customerimport",
+    "license": "OSL-3.0",
+    "type": "magento2-module",
+    "description": "Import Customers and Customer Addresses",
+    "require": {
+    },
+    "authors":[
+        {
+            "name":"Josh Johnson",
+            "email":"josh@augustash.com"
+        }
+    ],
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "Augustash\\CustomerImport\\": ""
+        }
+    }
+}
