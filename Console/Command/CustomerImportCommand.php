@@ -106,6 +106,8 @@ class CustomerImportCommand extends Command
         Random $random
     )
     {
+        parent::__construct();
+
         $this->appState = $appState;
         $this->customerFactory = $customerFactory;
         $this->fileCsv = $fileCsv;
@@ -115,29 +117,6 @@ class CustomerImportCommand extends Command
 
         // create the var/import directory if it doesn't exist
         $this->io->mkdir($this->directoryList->getRoot() . $this->csvFilePath , 0775);
-
-
-        /**
-         * Production & Default mode keep complaining
-         * about 'Area code is not set' so here's a
-         * workaround to set it the area_code before
-         * the execute method is called
-         */
-        try {
-            $pitaModes = [\Magento\Framework\App\State::MODE_PRODUCTION, \Magento\Framework\App\State::MODE_DEFAULT];
-
-            if (in_array($this->appState->getMode(), $pitaModes)) {
-                $this->appState->setAreaCode('adminhtml');
-            } else {
-                if (!$this->appState->getAreaCode()) {
-                    $this->appState->setAreaCode('adminhtml');
-                }
-            }
-        } catch (Exception $e) {
-            $this->log($e->getMessage());
-        }
-
-        parent::__construct();
     }
 
     protected function configure()
