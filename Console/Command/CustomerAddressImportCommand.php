@@ -190,8 +190,16 @@ class CustomerAddressImportCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if (!$this->appState->getAreaCode()) {
-            $this->appState->setAreaCode('adminhtml');
+        try {
+            if ($this->appState->getMode() == \Magento\Framework\App\State::MODE_DEVELOPER) {
+                $this->appState->setAreaCode('adminhtml');
+            } else {
+                if (!$this->appState->getAreaCode()) {
+                    $this->appState->setAreaCode('adminhtml');
+                }
+            }
+        } catch (Exception $e) {
+            $this->log($e->getMessage());
         }
 
         if ($input->getOption('info')) {
