@@ -167,18 +167,9 @@ Options:
 
 ## Installation
 
-In your project's `composer.json` file, add the following lines to the `require` and `repositories` sections:
+### Composer
 
-```js
-{
-    "require": {
-        "augustash/module-customerimport": "dev-master"
-    },
-    "repositories": {
-        "augustash-customerimport": {
-            "type": "vcs",
-            "url": "https://github.com/augustash/magento2-module-customer-import.git"
-        }
-    }
-}
+```bash
+$ composer config repositories.augustash-customerimport vcs https://github.com/augustash/magento2-module-customer-import.git
+$ composer require augustash/module-customerimport:~1.0.5
 ```
