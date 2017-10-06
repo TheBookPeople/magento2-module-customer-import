@@ -211,12 +211,17 @@ class CustomerImportCommand extends Command
                 } else {
                     if (isset($customerData['email']) && isset($customerData['firstname']) && isset($customerData['lastname'])) {
                         // create new customer
+                        $middlename = isset($customerData['middlename']) ? $customerData['middlename'] : null;
+                        $oldCustomerId = isset($customerData['old_customer_id']) ? $customerData['old_customer_id'] : null;
+
                         $customer->setData('email', strtolower($customerData['email']));
                         $customer->setData('firstname', $customerData['firstname']);
+                        $customer->setData('middlename', $middlename);
                         $customer->setData('lastname', $customerData['lastname']);
                         $customer->setData('is_active', true);
                         $customer->setData('website_id', $websiteId);
                         $customer->setData('store_id', $storeId);
+                        $customer->setData('old_customer_id', $oldCustomerId);
 
                         $optionalValues = ['group_id', 'created_at', 'old_customer_id', 'is_professional'];
                         foreach($optionalValues as $attr) {
