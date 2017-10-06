@@ -192,7 +192,9 @@ class CustomerAddressImportCommand extends Command
     {
         try {
             if ($this->appState->getMode() == \Magento\Framework\App\State::MODE_DEVELOPER) {
-                $this->appState->setAreaCode('adminhtml');
+                if (!$this->appState->getAreaCode()) {
+                    $this->appState->setAreaCode('adminhtml');
+                }
             } else {
                 if (!$this->appState->getAreaCode()) {
                     $this->appState->setAreaCode('adminhtml');
