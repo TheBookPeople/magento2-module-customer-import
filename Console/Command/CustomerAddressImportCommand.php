@@ -245,16 +245,22 @@ class CustomerAddressImportCommand extends Command
                 } else {
                     $formattedAddressData = $this->mapData($addressData);
 
+                    $isDefaultBilling = (isset($formattedAddressData['default_billing'])) ? 1 : 0;
+                    $isDefaultShipping = (isset($formattedAddressData['default_shipping'])) ? 1 : 0;
+
                     // $this->log('$formattedAddressData: ' . print_r($formattedAddressData, true));
 
-                    $exists = $this->checkIfCustomerAddressExists($customer->getId(),  $formattedAddressData);
-
-                    // $this->log('$exists: ' . var_export($exists, true));
+                    $existingAddressId = $this->checkIfCustomerAddressExists($customer->getId(),  $formattedAddressData);
 
                     $address = $this->addressFactory->create();
 
-                    if ($exists) {
+                    if ($existingAddressId) {
                         $existingCustomerAddresses[$key] = $addressData;
+
+                        $address = $address->load($existingAddressId);
+                        $address->setIsDefaultBilling($isDefaultBilling);
+                        $address->setIsDefaultShipping($isDefaultShipping);
+                        $address->save();
                     } else {
                         if (isset($formattedAddressData['firstname']) &&
                             isset($formattedAddressData['lastname']) &&
@@ -271,7 +277,8 @@ class CustomerAddressImportCommand extends Command
                             }
                             $address->setData('is_active', true);
                             $address->setData('parent_id', $customer->getId());
-
+                            $address->setIsDefaultBilling($isDefaultBilling);
+                            $address->setIsDefaultShipping($isDefaultShipping);
 
                             $optionalValues = ['created_at', 'updated_at'];
                             foreach($optionalValues as $attr) {
