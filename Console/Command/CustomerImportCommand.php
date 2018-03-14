@@ -143,17 +143,9 @@ class CustomerImportCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         try {
-            if ($this->appState->getMode() == \Magento\Framework\App\State::MODE_DEVELOPER) {
-                if (!$this->appState->getAreaCode()) {
-                    $this->appState->setAreaCode('adminhtml');
-                }
-            } else {
-                if (!$this->appState->getAreaCode()) {
-                    $this->appState->setAreaCode('adminhtml');
-                }
-            }
-        } catch (Exception $e) {
-            $this->log($e->getMessage());
+            $this->appState->getAreaCode();
+        } catch (\Magento\Framework\Exception\LocalizedException $e) {
+            $this->appState->setAreaCode('adminhtml');
         }
 
         if ($input->getOption('info')) {
@@ -209,7 +201,7 @@ class CustomerImportCommand extends Command
                 if ($exists) {
                     $existingCustomers[$key] = $customerData;
 
-                    $customer->setData('website_id');
+                    $customer->setData('website_id', $websiteId);
                     $customer = $customer->loadByEmail($customerData['email']);
                     $oldCustomerId = isset($customerData['old_customer_id']) ? $customerData['old_customer_id'] : null;
 
