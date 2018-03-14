@@ -201,7 +201,7 @@ class CustomerImportCommand extends Command
                 if ($exists) {
                     $existingCustomers[$key] = $customerData;
 
-                    $customer->setData('website_id');
+                    $customer->setData('website_id', $websiteId);
                     $customer = $customer->loadByEmail($customerData['email']);
                     $oldCustomerId = isset($customerData['old_customer_id']) ? $customerData['old_customer_id'] : null;
 
