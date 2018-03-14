@@ -245,8 +245,8 @@ class CustomerAddressImportCommand extends Command
                 } else {
                     $formattedAddressData = $this->mapData($addressData);
 
-                    $isDefaultBilling = (isset($formattedAddressData['default_billing'])) ? 1 : 0;
-                    $isDefaultShipping = (isset($formattedAddressData['default_shipping'])) ? 1 : 0;
+                    $isDefaultBilling = (isset($formattedAddressData['default_billing'])) ? (bool)$formattedAddressData['default_billing'] : 0;
+                    $isDefaultShipping = (isset($formattedAddressData['default_shipping'])) ? (bool)$formattedAddressData['default_shipping'] : 0;
 
                     // $this->log('$formattedAddressData: ' . print_r($formattedAddressData, true));
 
