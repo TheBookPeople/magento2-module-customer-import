@@ -191,9 +191,13 @@ class CustomerAddressImportCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         try {
-            $this->appState->getAreaCode();
-        } catch (\Magento\Framework\Exception\LocalizedException $e) {
             $this->appState->setAreaCode('adminhtml');
+        } catch (\Exception $e) {
+            try {
+                $this->appState->setAreaCode('adminhtml');
+            } catch (\Exception $e) {
+                // area code already set
+            }
         }
 
         if ($input->getOption('info')) {
