@@ -194,6 +194,8 @@ class CustomerImportCommand extends Command
         $this->log('sendWelcomeEmail: ' . var_export($sendWelcomeEmail, true));
         $this->log('websiteId: ' . var_export($websiteId, true));
         $this->log('storeId: ' . var_export($storeId, true));
+        $this->log('customAttributes: ' . print_r($this->getCustomAttributes(), true));
+
 
         $csvData = $this->fileCsv->getData($this->getCsvFilePath());
         $headers = array_values(array_shift($csvData));
@@ -221,8 +223,8 @@ class CustomerImportCommand extends Command
                 } else {
                     if (isset($customerData['email']) && isset($customerData['firstname']) && isset($customerData['lastname'])) {
                         // create new customer
-                        $middlename = isset($customerData['middlename']) ? $customerData['middlename'] : null;
-                        $oldCustomerId = isset($customerData['old_customer_id']) ? $customerData['old_customer_id'] : null;
+                        $middlename = isset($customerData['middlename']) && $customerData['middlename'] !== 'NULL' ? $customerData['middlename'] : null;
+                        $oldCustomerId = isset($customerData['old_customer_id']) && $customerData['old_customer_id'] !== 'NULL' ? $customerData['old_customer_id'] : null;
 
                         $customer->setData('email', strtolower($customerData['email']));
                         $customer->setData('firstname', $customerData['firstname']);
@@ -241,8 +243,8 @@ class CustomerImportCommand extends Command
                         }
 
                         foreach($this->getCustomAttributes() as $attr) {
-                            if (isset($customerData[$attr])) {
-                                $customer->setCustomAttribute($attr, $customerData[$attr]);
+                            if (isset($customerData[$attr]) && $customerData[$attr] !== 'NULL') {
+                                $customer->setData($attr, $customerData[$attr]);
                             }
                         }
 
