@@ -78,6 +78,7 @@ class CustomerImportCommand extends Command
         'send-welcome-email' => 'Send the new customer/welcome email to the customer.',
         'website-id' => 'Set the website the customer should belong to.',
         'store-id' => 'Set the store view the customer should belong to.',
+        'custom-attributes' => 'Define custom attributes as a comma-seperated list that should be included from the CSV.'
     ];
 
 
@@ -130,6 +131,7 @@ class CustomerImportCommand extends Command
         $this->addOption('send-welcome-email', null, InputOption::VALUE_OPTIONAL, $this->info['send-welcome-email'], false);
         $this->addOption('website-id', null, InputOption::VALUE_OPTIONAL, $this->info['website-id'], 1);
         $this->addOption('store-id', null, InputOption::VALUE_OPTIONAL, $this->info['store-id'], 1);
+        $this->addOption('custom-attributes', null, InputOption::VALUE_OPTIONAL, $this->info['custom-attributes']);
 
         parent::configure();
     }
@@ -143,9 +145,13 @@ class CustomerImportCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         try {
-            $this->appState->getAreaCode();
-        } catch (\Magento\Framework\Exception\LocalizedException $e) {
             $this->appState->setAreaCode('adminhtml');
+        } catch (\Exception $e) {
+            try {
+                $this->appState->setAreaCode('adminhtml');
+            } catch (\Exception $e) {
+                // area code already set
+            }
         }
 
         if ($input->getOption('info')) {
@@ -154,6 +160,7 @@ class CustomerImportCommand extends Command
             echo "send-welcome-email:\n\t" . $this->info['send-welcome-email'] . PHP_EOL . PHP_EOL;
             echo "website-id:\n\t" . $this->info['website-id'] . PHP_EOL . PHP_EOL;
             echo "store-id:\n\t" . $this->info['store-id'] . PHP_EOL . PHP_EOL;
+            echo "custom-attributes:\n\t" . $this->info['custom-attributes'] . PHP_EOL . PHP_EOL;
 
             echo "\n\nCustomer Import expects the {$this->csvFileName} file to be located in the {$this->csvFilePath} directory.\n\nThe log file is at {$this->logPath}" . PHP_EOL;
             exit;
@@ -173,6 +180,10 @@ class CustomerImportCommand extends Command
             $sendWelcomeEmail = $this->sendWelcomeEmail;
         }
 
+        if (isset($options['custom-attributes'])) {
+            $this->setCustomAttributes(explode(',', $options['custom-attributes']));
+        }
+
         $websiteId = (isset($options['website-id'])) ? $options['website-id'] : $this->websiteId;
         $storeId = (isset($options['store-id'])) ? $options['store-id'] : $this->storeId;
 
@@ -183,6 +194,8 @@ class CustomerImportCommand extends Command
         $this->log('sendWelcomeEmail: ' . var_export($sendWelcomeEmail, true));
         $this->log('websiteId: ' . var_export($websiteId, true));
         $this->log('storeId: ' . var_export($storeId, true));
+        $this->log('customAttributes: ' . print_r($this->getCustomAttributes(), true));
+
 
         $csvData = $this->fileCsv->getData($this->getCsvFilePath());
         $headers = array_values(array_shift($csvData));
@@ -210,8 +223,8 @@ class CustomerImportCommand extends Command
                 } else {
                     if (isset($customerData['email']) && isset($customerData['firstname']) && isset($customerData['lastname'])) {
                         // create new customer
-                        $middlename = isset($customerData['middlename']) ? $customerData['middlename'] : null;
-                        $oldCustomerId = isset($customerData['old_customer_id']) ? $customerData['old_customer_id'] : null;
+                        $middlename = isset($customerData['middlename']) && $customerData['middlename'] !== 'NULL' ? $customerData['middlename'] : null;
+                        $oldCustomerId = isset($customerData['old_customer_id']) && $customerData['old_customer_id'] !== 'NULL' ? $customerData['old_customer_id'] : null;
 
                         $customer->setData('email', strtolower($customerData['email']));
                         $customer->setData('firstname', $customerData['firstname']);
@@ -222,7 +235,7 @@ class CustomerImportCommand extends Command
                         $customer->setData('store_id', $storeId);
                         $customer->setData('old_customer_id', $oldCustomerId);
 
-                        $optionalValues = ['group_id', 'created_at', 'old_customer_id', 'is_professional'];
+                        $optionalValues = ['group_id', 'created_at'];
                         foreach($optionalValues as $attr) {
                             if (isset($customerData[$attr])) {
                                 $customer->setData($attr, $customerData[$attr]);
@@ -230,7 +243,7 @@ class CustomerImportCommand extends Command
                         }
 
                         foreach($this->getCustomAttributes() as $attr) {
-                            if (isset($customerData[$attr])) {
+                            if (isset($customerData[$attr]) && $customerData[$attr] !== 'NULL') {
                                 $customer->setData($attr, $customerData[$attr]);
                             }
                         }

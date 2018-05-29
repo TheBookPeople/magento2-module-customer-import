@@ -102,7 +102,8 @@ class CustomerAddressImportCommand extends Command
         'website-id' => 'Set the website the customer should belong to.',
         'store-id' => 'Set the store view the customer should belong to.',
         'customer-id-column' => 'Identify which column within the spreadsheet identifies the ID of the customer the address belongs to',
-        'find-customer-by-attribute' => 'Specify which customer attribute should be used to query the database to find a matching customer (i.e., "email", "customer_id", "old_customer_id").'
+        'find-customer-by-attribute' => 'Specify which customer attribute should be used to query the database to find a matching customer (i.e., "email", "customer_id", "old_customer_id").',
+        'custom-attributes' => 'Define custom attributes as a comma-seperated list that should be included from the CSV.',
     ];
 
     protected $requiredColumns = [
@@ -178,6 +179,8 @@ class CustomerAddressImportCommand extends Command
         $this->addOption('store-id', null, InputOption::VALUE_OPTIONAL, $this->info['store-id'], 1);
         $this->addOption('customer-id-column', null, InputOption::VALUE_OPTIONAL, $this->info['customer-id-column'], 'customer_id');
         $this->addOption('find-customer-by-attribute', null, InputOption::VALUE_OPTIONAL, $this->info['find-customer-by-attribute'], 'old_customer_id');
+        $this->addOption('custom-attributes', null, InputOption::VALUE_OPTIONAL, $this->info['custom-attributes']);
+
 
         parent::configure();
     }
@@ -191,9 +194,13 @@ class CustomerAddressImportCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         try {
-            $this->appState->getAreaCode();
-        } catch (\Magento\Framework\Exception\LocalizedException $e) {
             $this->appState->setAreaCode('adminhtml');
+        } catch (\Exception $e) {
+            try {
+                $this->appState->setAreaCode('adminhtml');
+            } catch (\Exception $e) {
+                // area code already set
+            }
         }
 
         if ($input->getOption('info')) {
@@ -202,6 +209,8 @@ class CustomerAddressImportCommand extends Command
             echo "store-id:\n\t" . $this->info['store-id'] . PHP_EOL . PHP_EOL;
             echo "customer-id-column:\n\t" . $this->info['customer-id-column'] . PHP_EOL . PHP_EOL;
             echo "find-customer-by-attribute\n\t" . $this->info['find-customer-by-attribute'] . PHP_EOL . PHP_EOL;
+            echo "custom-attributes:\n\t" . $this->info['custom-attributes'] . PHP_EOL . PHP_EOL;
+
 
             echo "\n\nCustomer Address Import expects the {$this->csvFileName} file to be located in the {$this->csvFilePath} directory.\n\nThe log file is at {$this->logPath}" . PHP_EOL . PHP_EOL;
             exit;
@@ -211,6 +220,10 @@ class CustomerAddressImportCommand extends Command
 
         $websiteId = (isset($options['website-id'])) ? $options['website-id'] : $this->websiteId;
         $storeId = (isset($options['store-id'])) ? $options['store-id'] : $this->storeId;
+
+        if (isset($options['custom-attributes'])) {
+            $this->setCustomAttributes(explode(',', $options['custom-attributes']));
+        }
 
         $customerIdColumn = isset($options['customer-id-column']) ? $options['customer-id-column'] : $this->customerIdColumn;
         $findCustomerByAttribute = isset($options['find-customer-by-attribute']) ? $options['find-customer-by-attribute'] : $this->findCustomerByAttribute;
@@ -222,6 +235,7 @@ class CustomerAddressImportCommand extends Command
         $this->log('storeId: ' . var_export($storeId, true));
         $this->log('customerIdColumn: ' . var_export($customerIdColumn, true));
         $this->log('findCustomerByAttribute: ' . var_export($findCustomerByAttribute, true));
+        $this->log('customAttributes: ' . print_r($this->getCustomAttributes(), true));
 
         $csvData = $this->fileCsv->getData($this->getCsvFilePath());
         $headers = array_values(array_shift($csvData));
@@ -481,7 +495,7 @@ class CustomerAddressImportCommand extends Command
 
                 case 'telephone':
                 case 'phone':
-                    if (empty($value)) {
+                    if (empty($value) || $value == 'NULL') {
                         $formattedAddress['telephone'] = '000-000-0000';
                     } else {
                         $formattedAddress['telephone'] = $value;
@@ -494,7 +508,11 @@ class CustomerAddressImportCommand extends Command
                     break;
 
                 default:
-                    $formattedAddress[$key] = $value;
+                    if ($formattedAddress[$key] == 'NULL') {
+                        $formattedAddress[$key] = null;
+                    } else {
+                        $formattedAddress[$key] = $value;
+                    }
                     break;
             }
         }
