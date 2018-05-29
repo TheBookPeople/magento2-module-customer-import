@@ -508,7 +508,7 @@ class CustomerAddressImportCommand extends Command
                     break;
 
                 default:
-                    if ($formattedAddress[$key] == 'NULL') {
+                    if (isset($formattedAddress[$key]) && $formattedAddress[$key] == 'NULL') {
                         $formattedAddress[$key] = null;
                     } else {
                         $formattedAddress[$key] = $value;
