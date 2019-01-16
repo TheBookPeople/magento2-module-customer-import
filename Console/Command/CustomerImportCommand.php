@@ -236,13 +236,13 @@ class CustomerImportCommand extends Command
                         $customer->setData('old_customer_id', $oldCustomerId);
 
                         $optionalValues = ['group_id', 'created_at'];
-                        foreach($optionalValues as $attr) {
+                        foreach ($optionalValues as $attr) {
                             if (isset($customerData[$attr])) {
                                 $customer->setData($attr, $customerData[$attr]);
                             }
                         }
 
-                        foreach($this->getCustomAttributes() as $attr) {
+                        foreach ($this->getCustomAttributes() as $attr) {
                             if (isset($customerData[$attr]) && $customerData[$attr] !== 'NULL') {
                                 $customer->setData($attr, $customerData[$attr]);
                             }
@@ -254,6 +254,10 @@ class CustomerImportCommand extends Command
                             if (isset($customerData['password'])) {
                                 $customer->setPassword($customerData['password']);
                             }
+                        }
+
+                        if (isset($customerData['wcsid'])) {
+                            $customer->setId($customerData['wcsid']);
                         }
 
                         // save the customer

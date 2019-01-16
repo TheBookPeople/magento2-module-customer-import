@@ -259,8 +259,8 @@ class CustomerAddressImportCommand extends Command
                 } else {
                     $formattedAddressData = $this->mapData($addressData);
 
-                    $isDefaultBilling = (isset($formattedAddressData['default_billing'])) ? (bool)$formattedAddressData['default_billing'] : 0;
-                    $isDefaultShipping = (isset($formattedAddressData['default_shipping'])) ? (bool)$formattedAddressData['default_shipping'] : 0;
+                    $isDefaultBilling = (isset($formattedAddressData['_address_default_billing_'])) ? (bool)$formattedAddressData['_address_default_billing_'] : 0;
+                    $isDefaultShipping = (isset($formattedAddressData['_address_default_shipping_'])) ? (bool)$formattedAddressData['_address_default_shipping_'] : 0;
 
                     // $this->log('$formattedAddressData: ' . print_r($formattedAddressData, true));
 
@@ -430,6 +430,7 @@ class CustomerAddressImportCommand extends Command
                 case 'lastname':
                 case 'company':
                 case 'city':
+                case 'street'
                     $formattedAddress[$key] = ucwords($value);
                     break;
 
@@ -543,6 +544,7 @@ class CustomerAddressImportCommand extends Command
             ->addFieldToFilter('region', $addressData['region'])
             ->addFieldToFilter('postcode', $addressData['postcode'])
             ->addFieldToFilter('country_id', $addressData['country_id'])
+            ->addFieldToFilter('credit_address', $addressData['credit_address'])
             ->setPageSize(1,1);
 
         $address = $collection->getFirstItem();
