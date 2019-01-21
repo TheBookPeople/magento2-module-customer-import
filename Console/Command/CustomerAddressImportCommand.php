@@ -495,7 +495,7 @@ class CustomerAddressImportCommand extends Command
                 case 'telephone':
                 case 'phone':
                     if (empty($value) || $value == 'NULL') {
-                        $formattedAddress['telephone'] = '000-000-0000';
+                        $formattedAddress['telephone'] = '';
                     } else {
                         $formattedAddress['telephone'] = $value;
                     }
