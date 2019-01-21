@@ -1,5 +1,5 @@
 {
-    "name": "augustash/module-customerimport",
+    "name": "tbp/module-customerimport",
     "license": "OSL-3.0",
     "type": "magento2-module",
     "description": "Import Customers and Customer Addresses",
