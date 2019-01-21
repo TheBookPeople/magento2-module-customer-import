@@ -149,8 +149,7 @@ class CustomerAddressImportCommand extends Command
         Random $random,
         RegionFactory $regionFactory,
         TranslatedLists $translatedLists
-    )
-    {
+    ) {
         $this->addressFactory = $addressFactory;
         $this->appState = $appState;
         $this->countryFactory = $countryFactory;
@@ -242,9 +241,8 @@ class CustomerAddressImportCommand extends Command
 
         $existingCustomerAddresses = [];
         $rowsWithErrors = [];
-        foreach($csvData as $key => $row) {
+        foreach ($csvData as $key => $row) {
             try {
-
                 $addressData = array_combine($headers, $row);
                 $customerIdColumnValue = $addressData[$customerIdColumn];
 
@@ -264,7 +262,7 @@ class CustomerAddressImportCommand extends Command
 
                     // $this->log('$formattedAddressData: ' . print_r($formattedAddressData, true));
 
-                    $existingAddressId = $this->checkIfCustomerAddressExists($customer->getId(),  $formattedAddressData);
+                    $existingAddressId = $this->checkIfCustomerAddressExists($customer->getId(), $formattedAddressData);
 
                     $address = $this->addressFactory->create();
 
@@ -286,7 +284,7 @@ class CustomerAddressImportCommand extends Command
                             isset($formattedAddressData['telephone'])
                         ) {
                             // create new customer address
-                            foreach($formattedAddressData as $key => $value) {
+                            foreach ($formattedAddressData as $key => $value) {
                                 $address->setData($key, $value);
                             }
                             $address->setData('is_active', true);
@@ -295,13 +293,13 @@ class CustomerAddressImportCommand extends Command
                             $address->setIsDefaultShipping($isDefaultShipping);
 
                             $optionalValues = ['created_at', 'updated_at'];
-                            foreach($optionalValues as $attr) {
+                            foreach ($optionalValues as $attr) {
                                 if (isset($formattedAddressData[$attr])) {
                                     $address->setData($attr, $formattedAddressData[$attr]);
                                 }
                             }
 
-                            foreach($this->getCustomAttributes() as $attr) {
+                            foreach ($this->getCustomAttributes() as $attr) {
                                 if (isset($formattedAddressData[$attr])) {
                                     $address->setData($attr, $formattedAddressData[$attr]);
                                 }
@@ -378,12 +376,12 @@ class CustomerAddressImportCommand extends Command
         $collection->addAttributeToSelect('*');
         $collection->addFieldToFilter('website_id', $websiteId);
 
-        foreach($attributes as $key => $attr) {
+        foreach ($attributes as $key => $attr) {
             $collection->addAttributeToFilter($attr, ['eq' => $values[$key]]);
         }
 
         // limit the query to fetch 1 result
-        $collection->setPageSize(1,1);
+        $collection->setPageSize(1, 1);
 
         $customer = $collection->getFirstItem();
         // $this->log('customer: ' . print_r($customer->getData(), true));
@@ -430,7 +428,7 @@ class CustomerAddressImportCommand extends Command
                 case 'lastname':
                 case 'company':
                 case 'city':
-                case 'street'
+                case 'street':
                     $formattedAddress[$key] = ucwords($value);
                     break;
 
@@ -468,7 +466,7 @@ class CustomerAddressImportCommand extends Command
                     if (!isset($value) || $value == '--') {
                         throw new \Exception("Unable to find region by value: '{$value}'");
                     } else {
-                        if(isset($data['country']) && in_array($data['country'], $usCountryValues)) {
+                        if (isset($data['country']) && in_array($data['country'], $usCountryValues)) {
                             $country = $data['country'];
                             switch (true) {
                                 case (strlen($value) == 2):
@@ -545,7 +543,7 @@ class CustomerAddressImportCommand extends Command
             ->addFieldToFilter('postcode', $addressData['postcode'])
             ->addFieldToFilter('country_id', $addressData['country_id'])
             ->addFieldToFilter('credit_address', $addressData['credit_address'])
-            ->setPageSize(1,1);
+            ->setPageSize(1, 1);
 
         $address = $collection->getFirstItem();
         // $this->log('SQL: ' . print_r($collection->getSelect()->__toString(), true));
@@ -649,5 +647,4 @@ class CustomerAddressImportCommand extends Command
     {
         return in_array(strtolower($value), [false, 'false', 'no', 'n', 0, '0'], true);
     }
-
 }
