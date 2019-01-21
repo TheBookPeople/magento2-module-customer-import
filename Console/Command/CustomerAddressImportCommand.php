@@ -2,22 +2,21 @@
 
 namespace Augustash\CustomerImport\Console\Command;
 
-use Magento\Framework\App\State;
-use Magento\Customer\Model\CustomerFactory;
 use Magento\Customer\Model\AddressFactory;
+use Magento\Customer\Model\CustomerFactory;
 use Magento\Directory\Model\CountryFactory;
 use Magento\Directory\Model\RegionFactory;
-use Magento\Framework\Locale\TranslatedLists;
 use Magento\Framework\App\Filesystem\DirectoryList;
-use Magento\Framework\Filesystem\Io\File;
+use Magento\Framework\App\State;
 use Magento\Framework\File\Csv;
+use Magento\Framework\Filesystem\Io\File;
+use Magento\Framework\Locale\TranslatedLists;
 use Magento\Framework\Math\Random;
 
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\OutputInterface;
 
 class CustomerAddressImportCommand extends Command
 {
@@ -99,6 +98,7 @@ class CustomerAddressImportCommand extends Command
      * @var array
      */
     protected $info = ['info' => 'Display additional information about this command (i.e., logs, filenames, etc.)',
+        'filename' => 'File name of custumer address csv file',
         'website-id' => 'Set the website the customer should belong to.',
         'store-id' => 'Set the store view the customer should belong to.',
         'customer-id-column' => 'Identify which column within the spreadsheet identifies the ID of the customer the address belongs to',
@@ -116,7 +116,6 @@ class CustomerAddressImportCommand extends Command
         'country_id',
         'telephone'
     ];
-
 
     // params (default)
     protected $websiteId = 1;
@@ -170,16 +169,16 @@ class CustomerAddressImportCommand extends Command
     protected function configure()
     {
         $this->setName('customer:address:import')
-            ->setDescription("Import Customer Addresses from a CSV file ({$this->csvFileName}) located in the {$this->csvFilePath} directory.");
+          ->setDescription("Import Customer Addresses from a CSV file ({$this->csvFileName}) located in the {$this->csvFilePath} directory.");
 
         // addOption($name, $shortcut, $mode, $description, $default)
         $this->addOption('info', null, null, $this->info['info']);
+        $this->addOption('filename', null, InputOption::VALUE_OPTIONAL, $this->info['filename'], 'customer_addresses.csv');
         $this->addOption('website-id', null, InputOption::VALUE_OPTIONAL, $this->info['website-id'], 1);
         $this->addOption('store-id', null, InputOption::VALUE_OPTIONAL, $this->info['store-id'], 1);
         $this->addOption('customer-id-column', null, InputOption::VALUE_OPTIONAL, $this->info['customer-id-column'], 'customer_id');
         $this->addOption('find-customer-by-attribute', null, InputOption::VALUE_OPTIONAL, $this->info['find-customer-by-attribute'], 'old_customer_id');
         $this->addOption('custom-attributes', null, InputOption::VALUE_OPTIONAL, $this->info['custom-attributes']);
-
 
         parent::configure();
     }
@@ -204,12 +203,12 @@ class CustomerAddressImportCommand extends Command
 
         if ($input->getOption('info')) {
             echo "info:\n\t" . $this->info['info'] . PHP_EOL . PHP_EOL;
+            echo "filename:\n\t" . $this->info['filename'] . PHP_EOL . PHP_EOL;
             echo "website-id:\n\t" . $this->info['website-id'] . PHP_EOL . PHP_EOL;
             echo "store-id:\n\t" . $this->info['store-id'] . PHP_EOL . PHP_EOL;
             echo "customer-id-column:\n\t" . $this->info['customer-id-column'] . PHP_EOL . PHP_EOL;
             echo "find-customer-by-attribute\n\t" . $this->info['find-customer-by-attribute'] . PHP_EOL . PHP_EOL;
             echo "custom-attributes:\n\t" . $this->info['custom-attributes'] . PHP_EOL . PHP_EOL;
-
 
             echo "\n\nCustomer Address Import expects the {$this->csvFileName} file to be located in the {$this->csvFilePath} directory.\n\nThe log file is at {$this->logPath}" . PHP_EOL . PHP_EOL;
             exit;
@@ -217,6 +216,7 @@ class CustomerAddressImportCommand extends Command
 
         $options = $input->getOptions();
 
+        $this->csvFileName = (isset($options['filename'])) ? $options['filename'] : $this->csvFilename;
         $websiteId = (isset($options['website-id'])) ? $options['website-id'] : $this->websiteId;
         $storeId = (isset($options['store-id'])) ? $options['store-id'] : $this->storeId;
 
@@ -230,6 +230,7 @@ class CustomerAddressImportCommand extends Command
         $output->writeln('<info>Starting Customer Address Import</info>');
 
         // $this->log('options: ' . print_r($input->getOptions(), true));
+        $this->log('filename: ' . var_export($this->csvFileName, true));
         $this->log('websiteId: ' . var_export($websiteId, true));
         $this->log('storeId: ' . var_export($storeId, true));
         $this->log('customerIdColumn: ' . var_export($customerIdColumn, true));
@@ -337,7 +338,6 @@ class CustomerAddressImportCommand extends Command
         $this->log('============================');
         $this->log(print_r($rowsWithErrors, true));
 
-
         $output->writeln("<info>Existing Customer Addresses (skipped): {$countExistingCustomerAddresses}</info>");
         $output->writeln("<info>Rows with errors (skipped): {$countRowsWithErrors}. See log for details.</info>");
         $output->writeln('<info>Finished Customer Import</info>');
@@ -392,7 +392,6 @@ class CustomerAddressImportCommand extends Command
 
         return false;
     }
-
 
     /**
      * Map/format raw data to Magento address conventions
@@ -554,7 +553,6 @@ class CustomerAddressImportCommand extends Command
 
         return false;
     }
-
 
     public function getRegionByCode($regionCode, $countryName)
     {

@@ -2,18 +2,17 @@
 
 namespace Augustash\CustomerImport\Console\Command;
 
-use Magento\Framework\App\State;
 use Magento\Customer\Model\CustomerFactory;
 use Magento\Framework\App\Filesystem\DirectoryList;
-use Magento\Framework\Filesystem\Io\File;
+use Magento\Framework\App\State;
 use Magento\Framework\File\Csv;
+use Magento\Framework\Filesystem\Io\File;
 use Magento\Framework\Math\Random;
 
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
+use Symfony\Component\Console\Output\OutputInterface;
 
 class CustomerImportCommand extends Command
 {
@@ -74,13 +73,13 @@ class CustomerImportCommand extends Command
      * @var array
      */
     protected $info = ['info' => 'Display additional information about this command (i.e., logs, filenames, etc.)',
+        'filename' => 'File name of custumer csv file',
         'generate-passwords' => 'Generate a new password for each customer.',
         'send-welcome-email' => 'Send the new customer/welcome email to the customer.',
         'website-id' => 'Set the website the customer should belong to.',
         'store-id' => 'Set the store view the customer should belong to.',
         'custom-attributes' => 'Define custom attributes as a comma-seperated list that should be included from the CSV.'
     ];
-
 
     // params
     protected $generatePasswords = true;
@@ -105,8 +104,7 @@ class CustomerImportCommand extends Command
         DirectoryList $directoryList,
         File $io,
         Random $random
-    )
-    {
+    ) {
         parent::__construct();
 
         $this->appState = $appState;
@@ -117,7 +115,7 @@ class CustomerImportCommand extends Command
         $this->random = $random;
 
         // create the var/import directory if it doesn't exist
-        $this->io->mkdir($this->directoryList->getRoot() . $this->csvFilePath , 0775);
+        $this->io->mkdir($this->directoryList->getRoot() . $this->csvFilePath, 0775);
     }
 
     protected function configure()
@@ -127,6 +125,7 @@ class CustomerImportCommand extends Command
 
         // addOption($name, $shortcut, $mode, $description, $default)
         $this->addOption('info', null, null, $this->info['info']);
+        $this->addOption('filename', null, InputOption::VALUE_OPTIONAL, $this->info['filename'], 'customers.csv');
         $this->addOption('generate-passwords', null, InputOption::VALUE_OPTIONAL, $this->info['generate-passwords'], true);
         $this->addOption('send-welcome-email', null, InputOption::VALUE_OPTIONAL, $this->info['send-welcome-email'], false);
         $this->addOption('website-id', null, InputOption::VALUE_OPTIONAL, $this->info['website-id'], 1);
@@ -156,6 +155,7 @@ class CustomerImportCommand extends Command
 
         if ($input->getOption('info')) {
             echo "info:\n\t" . $this->info['info'] . PHP_EOL . PHP_EOL;
+            echo "filename:\n\t" . $this->info['filename'] . PHP_EOL . PHP_EOL;
             echo "generate-passwords:\n\t" . $this->info['generate-passwords'] . PHP_EOL . PHP_EOL;
             echo "send-welcome-email:\n\t" . $this->info['send-welcome-email'] . PHP_EOL . PHP_EOL;
             echo "website-id:\n\t" . $this->info['website-id'] . PHP_EOL . PHP_EOL;
@@ -184,6 +184,7 @@ class CustomerImportCommand extends Command
             $this->setCustomAttributes(explode(',', $options['custom-attributes']));
         }
 
+        $this->csvFileName = (isset($options['filename'])) ? $options['filename'] : $this->csvFilename;
         $websiteId = (isset($options['website-id'])) ? $options['website-id'] : $this->websiteId;
         $storeId = (isset($options['store-id'])) ? $options['store-id'] : $this->storeId;
 
@@ -196,15 +197,13 @@ class CustomerImportCommand extends Command
         $this->log('storeId: ' . var_export($storeId, true));
         $this->log('customAttributes: ' . print_r($this->getCustomAttributes(), true));
 
-
         $csvData = $this->fileCsv->getData($this->getCsvFilePath());
         $headers = array_values(array_shift($csvData));
 
         $existingCustomers = [];
         $rowsWithErrors = [];
-        foreach($csvData as $key => $row) {
+        foreach ($csvData as $key => $row) {
             try {
-
                 $customerData = array_combine($headers, $row);
 
                 $customer = $this->customerFactory->create();
@@ -280,10 +279,8 @@ class CustomerImportCommand extends Command
             }
         }
 
-
         $countExistingCustomers = count($existingCustomers);
         $countRowsWithErrors = count($rowsWithErrors);
-
 
         $this->log('============================');
         $this->log('Existing Customers (skipped): ' . $countExistingCustomers);
@@ -294,7 +291,6 @@ class CustomerImportCommand extends Command
         $this->log('Rows with errors (skipped): ' . $countRowsWithErrors);
         $this->log('============================');
         $this->log(print_r($rowsWithErrors, true));
-
 
         $output->writeln("<info>Existing Customers (skipped): {$countExistingCustomers}</info>");
         $output->writeln("<info>Rows with errors (skipped): {$countRowsWithErrors}. See log for details.</info>");
@@ -354,5 +350,4 @@ class CustomerImportCommand extends Command
     {
         return in_array(strtolower($value), [false, 'false', 'no', 'n', 0, '0'], true);
     }
-
 }
