@@ -126,7 +126,7 @@ class CustomerImportCommand extends Command
         // addOption($name, $shortcut, $mode, $description, $default)
         $this->addOption('info', null, null, $this->info['info']);
         $this->addOption('filename', null, InputOption::VALUE_OPTIONAL, $this->info['filename'], 'customers.csv');
-        $this->addOption('generate-passwords', null, InputOption::VALUE_OPTIONAL, $this->info['generate-passwords'], true);
+        $this->addOption('generate-passwords', null, InputOption::VALUE_OPTIONAL, $this->info['generate-passwords'], false);
         $this->addOption('send-welcome-email', null, InputOption::VALUE_OPTIONAL, $this->info['send-welcome-email'], false);
         $this->addOption('website-id', null, InputOption::VALUE_OPTIONAL, $this->info['website-id'], 1);
         $this->addOption('store-id', null, InputOption::VALUE_OPTIONAL, $this->info['store-id'], 1);
