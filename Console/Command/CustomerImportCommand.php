@@ -213,7 +213,7 @@ class CustomerImportCommand extends Command
                         if (empty($customerData['created_at'])) {
                             $customer->setData('created_at', new \DateTime());
                         } else {
-                            $customer->setData('created_at', $customerData['created_at'];
+                            $customer->setData('created_at', $customerData['created_at']);
                         }
 
                         $optionalValues = ['group_id'];
