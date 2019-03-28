@@ -4,7 +4,6 @@ namespace Augustash\CustomerImport\Console\Command;
 
 use Magento\Customer\Model\CustomerFactory;
 use Magento\Framework\App\Filesystem\DirectoryList;
-use Magento\Framework\App\State;
 use Magento\Framework\File\Csv;
 use Magento\Framework\Filesystem\Io\File;
 use Magento\Framework\Math\Random;
@@ -90,7 +89,6 @@ class CustomerImportCommand extends Command
     /**
      * Constructor
      *
-     * @param \Magento\Framework\App\State $appState
      * @param \Magento\Customer\Model\CustomerFactory $customerFactory
      * @param \Magento\Framework\File\Csv $fileCsv
      * @param \Magento\Framework\App\Filesystem\DirectoryList $directoryList
@@ -98,7 +96,6 @@ class CustomerImportCommand extends Command
      * @param \Magento\Framework\Filesystem\Io\File $io
      */
     public function __construct(
-        State $appState,
         CustomerFactory $customerFactory,
         Csv $fileCsv,
         DirectoryList $directoryList,
@@ -107,14 +104,12 @@ class CustomerImportCommand extends Command
     ) {
         parent::__construct();
 
-        $this->appState = $appState;
         $this->customerFactory = $customerFactory;
         $this->fileCsv = $fileCsv;
         $this->directoryList = $directoryList;
         $this->io = $io;
         $this->random = $random;
 
-        // create the var/import directory if it doesn't exist
         $this->io->mkdir($this->directoryList->getRoot() . $this->csvFilePath, 0775);
     }
 
@@ -143,15 +138,6 @@ class CustomerImportCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        try {
-            $this->appState->setAreaCode('adminhtml');
-        } catch (\Exception $e) {
-            try {
-                $this->appState->setAreaCode('adminhtml');
-            } catch (\Exception $e) {
-                // area code already set
-            }
-        }
 
         if ($input->getOption('info')) {
             echo "info:\n\t" . $this->info['info'] . PHP_EOL . PHP_EOL;
@@ -190,7 +176,6 @@ class CustomerImportCommand extends Command
 
         $output->writeln('<info>Starting Customer Import</info>');
 
-        // $this->log('options: ' . print_r($input->getOptions(), true));
         $this->log('generatePasswords: ' . var_export($generatePasswords, true));
         $this->log('sendWelcomeEmail: ' . var_export($sendWelcomeEmail, true));
         $this->log('websiteId: ' . var_export($websiteId, true));
@@ -202,47 +187,38 @@ class CustomerImportCommand extends Command
 
         $existingCustomers = [];
         $rowsWithErrors = [];
+        $customerData = [];
         foreach ($csvData as $key => $row) {
             try {
                 $customerData = array_combine($headers, $row);
 
                 $customer = $this->customerFactory->create();
-
                 $exists = $this->checkIfCustomerExists($customerData['email'], $websiteId);
 
                 if ($exists) {
                     $existingCustomers[$key] = $customerData;
-
                     $customer->setData('website_id', $websiteId);
                     $customer = $customer->loadByEmail($customerData['email']);
-                    $oldCustomerId = isset($customerData['old_customer_id']) ? $customerData['old_customer_id'] : null;
-
-                    $customer->setData('old_customer_id', $oldCustomerId);
                     $customer->save();
                 } else {
                     if (isset($customerData['email']) && isset($customerData['firstname']) && isset($customerData['lastname'])) {
-                        // create new customer
-                        $middlename = isset($customerData['middlename']) && $customerData['middlename'] !== 'NULL' ? $customerData['middlename'] : null;
-                        $oldCustomerId = isset($customerData['old_customer_id']) && $customerData['old_customer_id'] !== 'NULL' ? $customerData['old_customer_id'] : null;
 
                         $customer->setData('email', strtolower($customerData['email']));
                         $customer->setData('firstname', $customerData['firstname']);
-                        $customer->setData('middlename', $middlename);
                         $customer->setData('lastname', $customerData['lastname']);
                         $customer->setData('is_active', true);
                         $customer->setData('website_id', $websiteId);
                         $customer->setData('store_id', $storeId);
-                        $customer->setData('old_customer_id', $oldCustomerId);
 
-                        $optionalValues = ['group_id', 'created_at'];
-                        foreach ($optionalValues as $attr) {
-                            if (isset($customerData[$attr])) {
-                                $customer->setData($attr, $customerData[$attr]);
-                            }
+                        if (empty($customerData['created_at'])) {
+                            $customer->setData('created_at', new \DateTime());
+                        } else {
+                            $customer->setData('created_at', $customerData['created_at'];
                         }
 
-                        foreach ($this->getCustomAttributes() as $attr) {
-                            if (isset($customerData[$attr]) && $customerData[$attr] !== 'NULL') {
+                        $optionalValues = ['group_id'];
+                        foreach ($optionalValues as $attr) {
+                            if (isset($customerData[$attr])) {
                                 $customer->setData($attr, $customerData[$attr]);
                             }
                         }
@@ -259,12 +235,18 @@ class CustomerImportCommand extends Command
                             $customer->setId($customerData['wcsid']);
                         }
 
-                        // save the customer
+                        $customerData = $customer->getDataModel();
+
+                        foreach ($this->getCustomAttributes() as $attr) {
+                            if (isset($customerData[$attr]) && $customerData[$attr] !== 'NULL') {
+                                $customerData->setCustomAttribute($attr, $customerData[$attr]);
+                            }
+                        }
+
+                        $customer->updateData($customerData);
+
                         $customer->save();
 
-                        if ($sendWelcomeEmail) {
-                            $customer->sendNewAccountEmail();
-                        }
                     } else {
                         $rowsWithErrors[$key] = $customerData;
                     }
@@ -285,7 +267,6 @@ class CustomerImportCommand extends Command
         $this->log('============================');
         $this->log('Existing Customers (skipped): ' . $countExistingCustomers);
         $this->log('============================');
-        // $this->log(print_r($existingCustomers, true));
 
         $this->log('============================');
         $this->log('Rows with errors (skipped): ' . $countRowsWithErrors);
@@ -330,7 +311,7 @@ class CustomerImportCommand extends Command
 
     public function log($info)
     {
-        $writer = new \Zend\Log\Writer\Stream(BP . $this->logPath);
+        $writer = new \Zend\Log\Writer\Stream(('php://output');
         $logger = new \Zend\Log\Logger();
         $logger->addWriter($writer);
         $logger->info($info);

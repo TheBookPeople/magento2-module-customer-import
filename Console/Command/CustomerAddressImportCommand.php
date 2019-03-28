@@ -7,7 +7,6 @@ use Magento\Customer\Model\CustomerFactory;
 use Magento\Directory\Model\CountryFactory;
 use Magento\Directory\Model\RegionFactory;
 use Magento\Framework\App\Filesystem\DirectoryList;
-use Magento\Framework\App\State;
 use Magento\Framework\File\Csv;
 use Magento\Framework\Filesystem\Io\File;
 use Magento\Framework\Locale\TranslatedLists;
@@ -120,13 +119,10 @@ class CustomerAddressImportCommand extends Command
     // params (default)
     protected $websiteId = 1;
     protected $storeId = 1;
-    protected $customerIdColumn = 'customer_id';
-    protected $findCustomerByAttribute = 'old_customer_id';
 
     /**
      * Constructor
      *
-     * @param \Magento\Framework\App\State $appState
      * @param \Magento\Customer\Model\AddressFactory $addressFactory
      * @param \Magento\Directory\Model\CountryFactory $countryFactory
      * @param \Magento\Customer\Model\CustomerFactory $customerFactory
@@ -138,7 +134,6 @@ class CustomerAddressImportCommand extends Command
      * @param \Magento\Framework\Locale\TranslatedLists $translatedLists
      */
     public function __construct(
-        State $appState,
         AddressFactory $addressFactory,
         CountryFactory $countryFactory,
         CustomerFactory $customerFactory,
@@ -150,7 +145,6 @@ class CustomerAddressImportCommand extends Command
         TranslatedLists $translatedLists
     ) {
         $this->addressFactory = $addressFactory;
-        $this->appState = $appState;
         $this->countryFactory = $countryFactory;
         $this->customerFactory = $customerFactory;
         $this->directoryList = $directoryList;
@@ -191,15 +185,6 @@ class CustomerAddressImportCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        try {
-            $this->appState->setAreaCode('adminhtml');
-        } catch (\Exception $e) {
-            try {
-                $this->appState->setAreaCode('adminhtml');
-            } catch (\Exception $e) {
-                // area code already set
-            }
-        }
 
         if ($input->getOption('info')) {
             echo "info:\n\t" . $this->info['info'] . PHP_EOL . PHP_EOL;
