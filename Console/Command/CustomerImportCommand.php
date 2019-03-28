@@ -235,15 +235,15 @@ class CustomerImportCommand extends Command
                             $customer->setId($customerData['wcsid']);
                         }
 
-                        $customerData = $customer->getDataModel();
+                        $customerDataModel = $customer->getDataModel();
 
                         foreach ($this->getCustomAttributes() as $attr) {
                             if (isset($customerData[$attr]) && $customerData[$attr] !== 'NULL') {
-                                $customerData->setCustomAttribute($attr, $customerData[$attr]);
+                                $customerDataModel->setCustomAttribute($attr, $customerData[$attr]);
                             }
                         }
 
-                        $customer->updateData($customerData);
+                        $customer->updateData($customerDataModel);
 
                         $customer->save();
 
