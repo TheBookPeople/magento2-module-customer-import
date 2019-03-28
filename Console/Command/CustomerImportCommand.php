@@ -311,7 +311,7 @@ class CustomerImportCommand extends Command
 
     public function log($info)
     {
-        $writer = new \Zend\Log\Writer\Stream(('php://output');
+        $writer = new \Zend\Log\Writer\Stream('php://output');
         $logger = new \Zend\Log\Logger();
         $logger->addWriter($writer);
         $logger->info($info);
