@@ -210,13 +210,15 @@ class CustomerImportCommand extends Command
                         $customer->setData('website_id', $websiteId);
                         $customer->setData('store_id', $storeId);
 
+                        /* Possible fix for aws mysql
                         if (empty($customerData['created_at'])) {
-                            $customer->setData('created_at', new \DateTime());
+                            $created = new \DateTime();
+                            $customer->setData('created_at', $created->format(\Magento\Framework\Stdlib\DateTime::DATETIME_PHP_FORMAT);
                         } else {
                             $customer->setData('created_at', $customerData['created_at']);
-                        }
+                        } */
 
-                        $optionalValues = ['group_id'];
+                        $optionalValues = ['group_id','created_at'];
                         foreach ($optionalValues as $attr) {
                             if (isset($customerData[$attr])) {
                                 $customer->setData($attr, $customerData[$attr]);
@@ -237,14 +239,18 @@ class CustomerImportCommand extends Command
 
                         $customerDataModel = $customer->getDataModel();
 
+                        $this->log('Custom Attributes');
                         foreach ($this->getCustomAttributes() as $attr) {
                             if (isset($customerData[$attr]) && $customerData[$attr] !== 'NULL') {
+                                $this->log('Attr : '. $attr . ' Val : '. $customerData[$attr] );
                                 $customerDataModel->setCustomAttribute($attr, $customerData[$attr]);
                             }
                         }
 
+                        $this->log('updateData' );
                         $customer->updateData($customerDataModel);
 
+                        $this->log('save' );
                         $customer->save();
 
                     } else {
@@ -253,11 +259,11 @@ class CustomerImportCommand extends Command
                 }
             } catch (LocalizedException $e) {
                 $rowsWithErrors[$key] = $customerData;
-                $output->writeln($e->getMessage());
+                $this->log($e);
             } catch (\Exception $e) {
                 $rowsWithErrors[$key] = $customerData;
-                $output->writeln('Not able to import customers');
-                $output->writeln($e->getMessage());
+                $this->log('Not able to import customers');
+                $this->log($e);
             }
         }
 
