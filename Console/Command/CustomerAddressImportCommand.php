@@ -323,11 +323,11 @@ class CustomerAddressImportCommand extends Command
                 }
             } catch (LocalizedException $e) {
                 $rowsWithErrors[$key] = $addressData;
-                $output->writeln($e);
+                $output->writeln($e->getMessage());
             } catch (\Exception $e) {
                 $rowsWithErrors[$key] = $addressData;
                 $output->writeln('Not able to import customer addresses because: ');
-                $output->writeln($e);
+                $output->writeln($e->getMessage());
             }
         }
 

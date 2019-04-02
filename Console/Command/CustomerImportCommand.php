@@ -260,11 +260,11 @@ class CustomerImportCommand extends Command
                 }
             } catch (LocalizedException $e) {
                 $rowsWithErrors[$key] = $customerData;
-                $output->writeln($e);
+                $output->writeln($e->getMessage());
             } catch (\Exception $e) {
                 $rowsWithErrors[$key] = $customerData;
                 $output->writeln('Not able to import customers');
-                $output->writeln($e);
+                $output->writeln($e->getMessage());
             }
         }
 
