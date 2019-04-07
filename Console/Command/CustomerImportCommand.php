@@ -187,6 +187,12 @@ class CustomerImportCommand extends Command
         $customerData = [];
         foreach ($csvData as $key => $row) {
             try {
+
+                //Skip Empty Row
+                if (sizeof($row) == 0) {
+                    continue;
+                }
+
                 $customerData = array_combine($headers, $row);
 
                 $customer = $this->customerFactory->create();
@@ -196,6 +202,27 @@ class CustomerImportCommand extends Command
                     $existingCustomers[$key] = $customerData;
                     $customer->setData('website_id', $websiteId);
                     $customer = $customer->loadByEmail($customerData['email']);
+
+
+                    $customerDataModel = $customer->getDataModel();
+                    if ($output->isVerbose()) {
+                        $output->writeln('Setting Custom Attributes');
+                    }
+
+                    foreach ($this->getCustomAttributes() as $attr) {
+                        if (isset($customerData[$attr]) && $customerData[$attr] !== 'NULL') {
+                            if ($output->isVerbose()) {
+                                $output->writeln('Attr : ' . $attr . ' Val : ' . $customerData[$attr]);
+                            }
+                            $customerDataModel->setCustomAttribute($attr, $customerData[$attr]);
+                        }
+                    }
+
+
+                    $customer->updateData($customerDataModel);
+
+                    $output->writeln('Updating '. $customerData['email']);
+
                     $customer->save();
                 } else {
                     if (isset($customerData['email']) && isset($customerData['firstname']) && isset($customerData['lastname'])) {
@@ -251,7 +278,7 @@ class CustomerImportCommand extends Command
 
                         $customer->updateData($customerDataModel);
 
-                        $output->writeln($customerData['email']);
+                        $output->writeln('Creating '. $customerData['email']);
                         $customer->save();
 
                     } else {
