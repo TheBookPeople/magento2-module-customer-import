@@ -251,25 +251,28 @@ class CustomerCardImportCommand extends Command
                             $cardNumber = $formattedCardData['CARDNUMBER'];
                             $expiryDate = sprintf('%02d', $formattedCardData['EXPIRYMONTH']) . substr($formattedCardData['EXPIRYYEAR'], 2, 2) ;
 
+                            // Set the payment token
                             $paymentToken = $this->paymentTokenManagement->create($cardToken);
 
-                            $details = json_encode([
-                                'customer_id' => $customerIdColumnValue,
-                                'public_hash' => substr(md5(rand(0, time())), 0, 128),
-                                'payment_method_code' => 'tns',
-                                'gateway_token' => $cardToken,
-                                'token_details' => '{"type":"'.$cardBrand.'","maskedCC":"'.$cardNumber.'","expirationDate":"'.$expiryDate.'"}',
-                                'type' => 'card',
-                                'is_active' => true,
-                                'is_visible' => true,
-                            ]);
-                            $paymentToken->setTokenDetails($details);
-                            $paymentToken->setEntityId(null);
+                            $paymentToken
+                                ->setCustomerId($customerIdColumnValue)
+                                ->setPaymentMethodCode('tns')
+                                ->setType('card')
+                                ->setGatewayToken($cardToken)
+                                ->setPublicHash(substr(md5(rand(0, time())), 0, 128))
+                                ->setTokenDetails(json_encode([
+                                    'type' => $cardBrand,
+                                    'maskedCC' => $cardNumber,
+                                    'expirationDate' => $expiryDate
+                                    ]))
+                                ->setIsActive(true)
+                                ->setIsVisible(true)
+                                ->setExpiresAt(date('Y-m-d H:i:s', strtotime('+1 year')))
+                                ->setEntityId(null);
 
-                            $this->log('Saving stored card...');
-                            // TODO: Constraint violation occurs due to public_hash not being saved
+                            // Save the card details
                             $this->vaultTokenRepository->save($paymentToken);
-                            $this->log('Stored card saved.');
+                            $this->log('Stored card saved with token ' . $cardToken);
 
                         } else {
                             $this->log('Formatted card data incomplete');
