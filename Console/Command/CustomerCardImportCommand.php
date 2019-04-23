@@ -216,20 +216,18 @@ class CustomerCardImportCommand extends Command
             try {
                 $cardData = array_combine($csvHeaders, $row);
                 $customerIdColumnValue = $cardData[$customerIdColumn];
-
-                $this->log('card token: ' . $cardData['CARDTOKEN']);
                 
-                $customer = $this->getCustomerByAttribute($findCustomerByAttribute, $customerIdColumnValue, $websiteId);
+                //$customer = $this->getCustomerByAttribute($findCustomerByAttribute, $customerIdColumnValue, $websiteId);
 
-                if (!$customer || !$customer->getId()) {
-                    $this->log('No customer for entity ' . $customerIdColumnValue);
-                    continue;
-                } else if (!$customer || !$customer->getId()) {
-                    $this->log('No customer ID for entity ' . $customerIdColumnValue);
-                    continue;
-                } else {
+                // if (!$customer || !$customer->getId()) {
+                //     $this->log('No customer for entity ' . $customerIdColumnValue);
+                //     continue;
+                // } else if (!$customer || !$customer->getId()) {
+                //     $this->log('No customer ID for entity ' . $customerIdColumnValue);
+                //     continue;
+                // } else {
                     $formattedCardData = $this->mapData($cardData);
-                    $existingCardToken = $this->checkIfStoredCardExists($customer->getId(), $formattedCardData);
+                    $existingCardToken = false; //$this->checkIfStoredCardExists($customer->getId(), $formattedCardData);
 
                     if ($existingCardToken) {
                         $this->log('Stored card ' . $formattedCardData['card_token'] . ' already exists');
@@ -256,14 +254,15 @@ class CustomerCardImportCommand extends Command
 
                             $paymentToken
                                 ->setCustomerId($customerIdColumnValue)
-                                ->setPaymentMethodCode('tns')
+                                ->setPaymentMethodCode('tns_cc_vault')
                                 ->setType('card')
                                 ->setGatewayToken($cardToken)
-                                ->setPublicHash(substr(md5(rand(0, time())), 0, 128))
+                                ->setPublicHash(hash("sha256", rand(0, time()), false))
                                 ->setTokenDetails(json_encode([
                                     'type' => $cardBrand,
                                     'maskedCC' => $cardNumber,
-                                    'expirationDate' => $expiryDate
+                                    'expirationDate' => $expiryDate,
+                                    'currency' => "GBP"
                                     ]))
                                 ->setIsActive(true)
                                 ->setIsVisible(true)
@@ -285,7 +284,7 @@ class CustomerCardImportCommand extends Command
                             $rowsWithErrors[$key] = $cardData;
                         }
                     }
-                }
+                // }
             } catch (LocalizedException $e) {
                 $rowsWithErrors[$key] = $cardData;
                 $output->writeln($e->getMessage());
