@@ -7,6 +7,7 @@ Import Customers and Customer Addresses via `php bin/magento` or `n98-magerun2` 
 Provides the following console commands:
   + `customer:import`
   + `customer:address:import`
+  + `customer:card:import`
   + `customer:send:email`
 
 ## Customer Import
@@ -24,7 +25,7 @@ $ php bin/magento customer:import
 + Assumes the customers are being imported into the default store view (i.e., store_id = 1). You can override this by setting `--store-id=<STORE_VIEW_ID>`.
 + Generates new passwords for customers (can be disabled by `--generate-passwords=false`)
 + (optional) Can send the new account email if `--send-welcome-email=true` or avoid sending emails by setting `--send-welcome-email=false`
-+ Log file is located at `<MagentoRoo>/var/log/customer_import.log`
++ Log file is located at `<MagentoRoot>/var/log/customer_import.log`
 
 ### Options
 
@@ -72,7 +73,7 @@ $ php bin/magento customer:address:import
 + CSV file named `customer_addresses.csv` is located in the `<MagentoRoot>/var/import` directory
 + Assumes customer addresses are being imported into the default website (i.e., website_id = 1). You can override this by setting `--website-id=<WEBSITE_ID>`.
 + Assumes the customer addresses are being imported into the default store view (i.e., store_id = 1). You can override this by setting `--store-id=<STORE_VIEW_ID>`.
-+ Log file is located at `<MagentoRoo>/var/log/customer_address_import.log`
++ Log file is located at `<MagentoRoot>/var/log/customer_address_import.log`
 
 ### Options
 
@@ -84,11 +85,59 @@ $ php bin/magento customer:address:import
 | customer-id-column | Identify which column within the spreadsheet identifies the ID of the customer the address belongs to | customer_id |
 | find-customer-by-attribute | Specify which customer attribute should be used to query the database to find a matching customer (i.e., "email", "customer_id", "old_customer_id"). | old_customer_id |
 
-
 For available options and usage examples use the `-h` or `--help` option:
 
 ```bash
 $ php bin/magento customer:address:import -h
+Usage:
+ customer:address:import [--info] [--website-id[="..."]] [--store-id[="..."]] [--customer-id-column[="..."]] [--find-customer-by-attribute[="..."]]
+
+Options:
+ --info                        Display additional information about this command (i.e., logs, filenames, etc.)
+ --website-id                  Set the website the customer should belong to. (default: 1)
+ --store-id                    Set the store view the customer should belong to. (default: 1)
+ --customer-id-column          Identify which column within the spreadsheet identifies the ID of the customer the address belongs to (default: "customer_id")
+ --find-customer-by-attribute  Specify which customer attribute should be used to query the database to find a matching customer (i.e., "email", "customer_id", "old_customer_id"). (default: "old_customer_id")
+ --help (-h)                   Display this help message
+ --quiet (-q)                  Do not output any message
+ --verbose (-v|vv|vvv)         Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug
+ --version (-V)                Display this application version
+ --ansi                        Force ANSI output
+ --no-ansi                     Disable ANSI output
+ --no-interaction (-n)         Do not ask any interactive question
+
+```
+
+## Stored Card Import
+
+### Command
+
+```bash
+$ php bin/magento customer:card:import
+```
+
+### Assumptions:
+
++ The customers need to exist in the database before running this command
++ CSV file named `stored_cards.csv` is located in the `<MagentoRoot>/var/import` directory
++ Assumes stored cards are being imported into the default website (i.e., website_id = 1). You can override this by setting `--website-id=<WEBSITE_ID>`.
++ Assumes the stored cards are being imported into the default store view (i.e., store_id = 1). You can override this by setting `--store-id=<STORE_VIEW_ID>`.
++ Log file is located at `<MagentoRoot>/var/log/stored_card_import.log`
+
+### Options
+
+| Option | Description  | Default |
+| -------| -------------| --------|
+| info | Display additional information about this command (i.e., logs, filenames, etc.) |  |
+| website-id | Set the website the customer should belong to. | 1 |
+| store-id | Set the store view the customer should belong to. | 1 |
+| customer-id-column | Identify which column within the spreadsheet identifies the ID of the customer the address belongs to | customer_id |
+| find-customer-by-attribute | Specify which customer attribute should be used to query the database to find a matching customer (i.e., "email", "customer_id", "old_customer_id"). | old_customer_id |
+
+For available options and usage examples use the `-h` or `--help` option:
+
+```bash
+$ php bin/magento customer:card:import -h
 Usage:
  customer:address:import [--info] [--website-id[="..."]] [--store-id[="..."]] [--customer-id-column[="..."]] [--find-customer-by-attribute[="..."]]
 
