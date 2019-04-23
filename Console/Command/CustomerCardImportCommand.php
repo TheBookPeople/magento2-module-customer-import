@@ -264,8 +264,8 @@ class CustomerCardImportCommand extends Command
                             $paymentToken->setEntityId(null);
 
                             $this->log('Saving stored card...');
-                            // TODO: Timeout occurs here
-                            return $this->vaultTokenRepository->save($paymentToken);
+                            // TODO: Constraint violation occurs due to public_hash not being saved
+                            $this->vaultTokenRepository->save($paymentToken);
                             $this->log('Stored card saved.');
 
                         } else {
