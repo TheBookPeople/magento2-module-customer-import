@@ -253,14 +253,17 @@ class CustomerCardImportCommand extends Command
 
                             $paymentToken = $this->paymentTokenManagement->create($cardToken);
 
-                            $paymentToken->customer_id = $customerIdColumnValue;
-                            $paymentToken->public_hash = substr(md5(rand(0, time())), 0, 128);
-                            $paymentToken->payment_method_code = 'tns';
-                            $paymentToken->gateway_token = $cardToken;
-                            $paymentToken->token_details = '{"type":"'.$cardBrand.'","maskedCC":"'.$cardNumber.'","expirationDate":"'.$expiryDate.'"}';
-                            $paymentToken->type = 'card';
-                            $paymentToken->is_active = true;
-                            $paymentToken->is_visible = true;
+                            $details = json_encode([
+                                'customer_id' => $customerIdColumnValue,
+                                'public_hash' => substr(md5(rand(0, time())), 0, 128),
+                                'payment_method_code' => 'tns',
+                                'gateway_token' => $cardToken,
+                                'token_details' => '{"type":"'.$cardBrand.'","maskedCC":"'.$cardNumber.'","expirationDate":"'.$expiryDate.'"}',
+                                'type' => 'card',
+                                'is_active' => true,
+                                'is_visible' => true,
+                            ]);
+                            $paymentToken->setTokenDetails($details);
                             $paymentToken->setEntityId(null);
 
                             $this->log('Saving stored card...');
