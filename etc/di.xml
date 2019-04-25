@@ -5,9 +5,11 @@
 			<argument name="commands" xsi:type="array">
 				<item name="customer_import" xsi:type="object">Augustash\CustomerImport\Console\Command\CustomerImportCommand</item>
                 <item name="customer_address_import" xsi:type="object">Augustash\CustomerImport\Console\Command\CustomerAddressImportCommand</item>
-                <item name="customer_email_send" xsi:type="object">Augustash\CustomerImport\Console\Command\CustomerSendEmailCommand</item>
                 <item name="stored_card_import" xsi:type="object">Augustash\CustomerImport\Console\Command\CustomerCardImportCommand</item>
 			</argument>
 		</arguments>
 	</type>
+	<preference for="Magento\Vault\Api\Data\PaymentTokenInterfaceFactory" type="Magento\Vault\Model\CreditCardTokenFactory" />
 </config>
+
+

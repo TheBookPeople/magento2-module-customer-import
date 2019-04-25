@@ -7,11 +7,11 @@ use Magento\Customer\Model\CustomerFactory;
 use Magento\Directory\Model\CountryFactory;
 use Magento\Directory\Model\RegionFactory;
 use Magento\Framework\App\Filesystem\DirectoryList;
-use Magento\Framework\App\State;
 use Magento\Framework\File\Csv;
 use Magento\Framework\Filesystem\Io\File;
 use Magento\Framework\Locale\TranslatedLists;
 use Magento\Framework\Math\Random;
+use Magento\Framework\App\ObjectManager;
 
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -84,11 +84,6 @@ class CustomerAddressImportCommand extends Command
     protected $csvFilePath = '/var/import';
 
     /**
-     * @var string
-     */
-    protected $logPath = '/var/log/customer_address_import.log';
-
-    /**
      * @var array
      */
     protected $customAttributes = [];
@@ -120,13 +115,10 @@ class CustomerAddressImportCommand extends Command
     // params (default)
     protected $websiteId = 1;
     protected $storeId = 1;
-    protected $customerIdColumn = 'customer_id';
-    protected $findCustomerByAttribute = 'old_customer_id';
 
     /**
      * Constructor
      *
-     * @param \Magento\Framework\App\State $appState
      * @param \Magento\Customer\Model\AddressFactory $addressFactory
      * @param \Magento\Directory\Model\CountryFactory $countryFactory
      * @param \Magento\Customer\Model\CustomerFactory $customerFactory
@@ -138,7 +130,6 @@ class CustomerAddressImportCommand extends Command
      * @param \Magento\Framework\Locale\TranslatedLists $translatedLists
      */
     public function __construct(
-        State $appState,
         AddressFactory $addressFactory,
         CountryFactory $countryFactory,
         CustomerFactory $customerFactory,
@@ -150,7 +141,6 @@ class CustomerAddressImportCommand extends Command
         TranslatedLists $translatedLists
     ) {
         $this->addressFactory = $addressFactory;
-        $this->appState = $appState;
         $this->countryFactory = $countryFactory;
         $this->customerFactory = $customerFactory;
         $this->directoryList = $directoryList;
@@ -169,9 +159,8 @@ class CustomerAddressImportCommand extends Command
     protected function configure()
     {
         $this->setName('customer:address:import')
-          ->setDescription("Import Customer Addresses from a CSV file ({$this->csvFileName}) located in the {$this->csvFilePath} directory.");
+            ->setDescription("Import Customer Addresses from a CSV file ({$this->csvFileName}) located in the {$this->csvFilePath} directory.");
 
-        // addOption($name, $shortcut, $mode, $description, $default)
         $this->addOption('info', null, null, $this->info['info']);
         $this->addOption('filename', null, InputOption::VALUE_OPTIONAL, $this->info['filename'], 'customer_addresses.csv');
         $this->addOption('website-id', null, InputOption::VALUE_OPTIONAL, $this->info['website-id'], 1);
@@ -191,11 +180,13 @@ class CustomerAddressImportCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+
+        $appState = ObjectManager::getInstance()->get(\Magento\Framework\App\State::class);
         try {
-            $this->appState->setAreaCode('adminhtml');
+            $appState->setAreaCode('adminhtml');
         } catch (\Exception $e) {
             try {
-                $this->appState->setAreaCode('adminhtml');
+                $appState->setAreaCode('adminhtml');
             } catch (\Exception $e) {
                 // area code already set
             }
@@ -210,7 +201,7 @@ class CustomerAddressImportCommand extends Command
             echo "find-customer-by-attribute\n\t" . $this->info['find-customer-by-attribute'] . PHP_EOL . PHP_EOL;
             echo "custom-attributes:\n\t" . $this->info['custom-attributes'] . PHP_EOL . PHP_EOL;
 
-            echo "\n\nCustomer Address Import expects the {$this->csvFileName} file to be located in the {$this->csvFilePath} directory.\n\nThe log file is at {$this->logPath}" . PHP_EOL . PHP_EOL;
+            echo "\n\nCustomer Address Import expects the {$this->csvFileName} file to be located in the {$this->csvFilePath} directory.\n\nThe log file is at {$output->writelnPath}" . PHP_EOL . PHP_EOL;
             exit;
         }
 
@@ -227,21 +218,21 @@ class CustomerAddressImportCommand extends Command
         $customerIdColumn = isset($options['customer-id-column']) ? $options['customer-id-column'] : $this->customerIdColumn;
         $findCustomerByAttribute = isset($options['find-customer-by-attribute']) ? $options['find-customer-by-attribute'] : $this->findCustomerByAttribute;
 
-        $output->writeln('<info>Starting Customer Address Import</info>');
+        $output->writeln("Starting Customer Address Import");
 
-        // $this->log('options: ' . print_r($input->getOptions(), true));
-        $this->log('filename: ' . var_export($this->csvFileName, true));
-        $this->log('websiteId: ' . var_export($websiteId, true));
-        $this->log('storeId: ' . var_export($storeId, true));
-        $this->log('customerIdColumn: ' . var_export($customerIdColumn, true));
-        $this->log('findCustomerByAttribute: ' . var_export($findCustomerByAttribute, true));
-        $this->log('customAttributes: ' . print_r($this->getCustomAttributes(), true));
+        $output->writeln('filename: ' . var_export($this->csvFileName, true));
+        $output->writeln('websiteId: ' . var_export($websiteId, true));
+        $output->writeln('storeId: ' . var_export($storeId, true));
+        $output->writeln('customerIdColumn: ' . var_export($customerIdColumn, true));
+        $output->writeln('findCustomerByAttribute: ' . var_export($findCustomerByAttribute, true));
+        $output->writeln('customAttributes: ' . print_r($this->getCustomAttributes(), true));
 
         $csvData = $this->fileCsv->getData($this->getCsvFilePath());
         $headers = array_values(array_shift($csvData));
 
         $existingCustomerAddresses = [];
         $rowsWithErrors = [];
+        $addressData =[];
         foreach ($csvData as $key => $row) {
             try {
                 $addressData = array_combine($headers, $row);
@@ -260,8 +251,6 @@ class CustomerAddressImportCommand extends Command
 
                     $isDefaultBilling = (isset($formattedAddressData['_address_default_billing_'])) ? (bool)$formattedAddressData['_address_default_billing_'] : 0;
                     $isDefaultShipping = (isset($formattedAddressData['_address_default_shipping_'])) ? (bool)$formattedAddressData['_address_default_shipping_'] : 0;
-
-                    // $this->log('$formattedAddressData: ' . print_r($formattedAddressData, true));
 
                     $existingAddressId = $this->checkIfCustomerAddressExists($customer->getId(), $formattedAddressData);
 
@@ -293,22 +282,39 @@ class CustomerAddressImportCommand extends Command
                             $address->setIsDefaultBilling($isDefaultBilling);
                             $address->setIsDefaultShipping($isDefaultShipping);
 
-                            $optionalValues = ['created_at', 'updated_at'];
+                            if (empty($customerData['created_at'])) {
+                                $created = new \DateTime();
+                                $address->setData('created_at', $created->format(\Magento\Framework\Stdlib\DateTime::DATETIME_PHP_FORMAT));
+                            } else {
+                                $address->setData('created_at', $formattedAddressData['created_at']);
+                            }
+
+                            $optionalValues = ['updated_at'];
                             foreach ($optionalValues as $attr) {
                                 if (isset($formattedAddressData[$attr])) {
                                     $address->setData($attr, $formattedAddressData[$attr]);
                                 }
                             }
 
+                            $addressDataModel = $address->getDataModel();
+
+                            if ($output->isVerbose()) {
+                                $output->writeln('Setting Custom Attributes');
+                            }
+
+
                             foreach ($this->getCustomAttributes() as $attr) {
                                 if (isset($formattedAddressData[$attr])) {
+                                    if ($output->isVerbose()) {
+                                        $output->writeln('Attr : ' . $attr . ' Val : ' . $formattedAddressData[$attr]);
+                                    }
                                     $address->setData($attr, $formattedAddressData[$attr]);
                                 }
                             }
 
-                            // $this->log('address before save: ' . print_r($address->getData(), true));
+                            $address->updateData($addressDataModel);
 
-                            // save the customer address
+
                             $address->save();
                         } else {
                             $rowsWithErrors[$key] = $addressData;
@@ -328,19 +334,19 @@ class CustomerAddressImportCommand extends Command
         $countExistingCustomerAddresses = count($existingCustomerAddresses);
         $countRowsWithErrors = count($rowsWithErrors);
 
-        $this->log('============================');
-        $this->log('Existing Customer Addresses (skipped): ' . $countExistingCustomerAddresses);
-        $this->log('============================');
-        // $this->log(print_r($existingCustomers, true));
+        $output->writeln('============================');
+        $output->writeln('Existing Customer Addresses (skipped): ' . $countExistingCustomerAddresses);
+        $output->writeln('============================');
+        // $output->writeln(print_r($existingCustomers, true));
 
-        $this->log('============================');
-        $this->log('Rows with errors (skipped): ' . $countRowsWithErrors);
-        $this->log('============================');
-        $this->log(print_r($rowsWithErrors, true));
+        $output->writeln('============================');
+        $output->writeln('Rows with errors (skipped): ' . $countRowsWithErrors);
+        $output->writeln('============================');
+        $output->writeln(print_r($rowsWithErrors, true));
 
-        $output->writeln("<info>Existing Customer Addresses (skipped): {$countExistingCustomerAddresses}</info>");
-        $output->writeln("<info>Rows with errors (skipped): {$countRowsWithErrors}. See log for details.</info>");
-        $output->writeln('<info>Finished Customer Import</info>');
+        $output->writeln("Existing Customer Addresses (skipped): {$countExistingCustomerAddresses}");
+        $output->writeln("Rows with errors (skipped): {$countRowsWithErrors}.");
+        $output->writeln("Finished Customer Import");
     }
 
     /**
@@ -384,7 +390,7 @@ class CustomerAddressImportCommand extends Command
         $collection->setPageSize(1, 1);
 
         $customer = $collection->getFirstItem();
-        // $this->log('customer: ' . print_r($customer->getData(), true));
+        // $output->writeln('customer: ' . print_r($customer->getData(), true));
 
         if ($customer && $customer->getId()) {
             return $customer;
@@ -545,7 +551,6 @@ class CustomerAddressImportCommand extends Command
             ->setPageSize(1, 1);
 
         $address = $collection->getFirstItem();
-        // $this->log('SQL: ' . print_r($collection->getSelect()->__toString(), true));
 
         if ($address && $address->getId()) {
             return $address->getId();
@@ -623,13 +628,6 @@ class CustomerAddressImportCommand extends Command
         return $this->requiredColumns;
     }
 
-    public function log($info)
-    {
-        $writer = new \Zend\Log\Writer\Stream(BP . $this->logPath);
-        $logger = new \Zend\Log\Logger();
-        $logger->addWriter($writer);
-        $logger->info($info);
-    }
 
     public function getCsvFilePath()
     {
