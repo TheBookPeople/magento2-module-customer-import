@@ -132,7 +132,7 @@ class CustomerCardImportCommand extends Command
     protected function configure()
     {
         $this->setName('customer:card:import')
-          ->setDescription("Import Stored Cards from a CSV file ({$this->csvFileName}) located in the {$this->csvFilePath} directory.");
+            ->setDescription("Import Stored Cards from a CSV file ({$this->csvFileName}) located in the {$this->csvFilePath} directory.");
 
         $this->addOption('info', null, null, $this->info['info']);
         $this->addOption('filename', null, InputOption::VALUE_OPTIONAL, $this->info['filename'], 'stored_cards.csv');
@@ -193,7 +193,6 @@ class CustomerCardImportCommand extends Command
 
         $existingStoredCards = [];
         $rowsWithErrors = [];
-
         foreach ($csvData as $key => $row) {
 
             //Skip Empty Row
@@ -203,84 +202,83 @@ class CustomerCardImportCommand extends Command
 
             try {
                 $cardData = array_combine($csvHeaders, $row);
+                $customerId = array_values($cardData)[0];
+                //$customerId = $cardData['USERS_ID'];
+                $formattedCardData = $this->mapData($cardData);
 
-                    $formattedCardData = $this->mapData($cardData);
 
-                    $customerId = $cardData['USERS_ID'];
-                    $cardToken = $formattedCardData['CARDTOKEN'];
-                    $publicHash = $this->encryptor->getHash($cardToken);
-                    $existingCardToken = false;
-                    if ($this->paymentTokenManagement->getByPublicHash($publicHash,$customerId)) {
-                     $existingCardToken = true;
-                    }
+                $cardToken = $formattedCardData['CARDTOKEN'];
+                $publicHash = $this->encryptor->getHash($cardToken);
+                $existingCardToken = false;
+                if ($this->paymentTokenManagement->getByPublicHash($publicHash,$customerId)) {
+                    $existingCardToken = true;
+                }
 
-                    if ($existingCardToken) {
-                        $output->writeln('Stored card ' . $cardToken . ' already exists for customer '.$customerId );
-                        $existingStoredCards[$key] = $cardData;
-                    } else {
-                        if (isset($formattedCardData['CARDTOKEN']) &&
-                            isset($formattedCardData['CARDBRAND']) &&
-                            isset($formattedCardData['CARDNUMBER']) &&
-                            isset($formattedCardData['EXPIRYYEAR']) &&
-                            isset($formattedCardData['EXPIRYMONTH']) &&
-                            isset($formattedCardData['CURRENCY'])
-                        ) {
+                if ($existingCardToken) {
+                    $output->writeln('Stored card ' . $cardToken . ' already exists for customer '.$customerId );
+                    // $existingStoredCards[$key] = $cardData;
+                } else {
+                    if (isset($formattedCardData['CARDTOKEN']) &&
+                        isset($formattedCardData['CARDBRAND']) &&
+                        isset($formattedCardData['CARDNUMBER']) &&
+                        isset($formattedCardData['EXPIRYYEAR']) &&
+                        isset($formattedCardData['EXPIRYMONTH']) &&
+                        isset($formattedCardData['CURRENCY'])
+                    ) {
 
-                            try {
-                                if (!$this->customerRepositoryInterface->getById($customerId)) {
-                                    $output->writeln("Customer ".$customerId ." does not exist skipping");
-                                    continue;
-                                }
-                            }catch (\Magento\Framework\Exception\NoSuchEntityException $e){
+                        try {
+                            if (!$this->customerRepositoryInterface->getById($customerId)) {
                                 $output->writeln("Customer ".$customerId ." does not exist skipping");
                                 continue;
                             }
-
-
-                            $output->writeln('Adding card ' . $formattedCardData['CARDNUMBER'] . ' for customer ' . $customerId);
-                            // create new stored card
-                            $cardToken = $formattedCardData['CARDTOKEN'];
-                            $cardBrand = $formattedCardData['CARDBRAND'];
-                            $cardNumber = $formattedCardData['CARDNUMBER'];
-                            $currency = $formattedCardData['CURRENCY'];
-                            $expiryDate = sprintf('%02d', $formattedCardData['EXPIRYMONTH']) . substr($formattedCardData['EXPIRYYEAR'], 2, 2) ;
-
-
-                            $paymentToken = $this->paymentTokenFactory->create();
-                            $paymentToken->setPaymentMethodCode('tns');
-                            $paymentToken->setGatewayToken($cardToken);
-                            $paymentToken->setExpiresAt($this->getExpirationDate($expiryDate));
-                            $paymentToken->setTokenDetails($this->convertDetailsToJSON([
-                                'type' => $cardBrand,
-                                'maskedCC' => $cardNumber,
-                                'expirationDate' => $expiryDate,
-                                'currency' => $currency
-                            ]));
-
-                            $paymentToken->setCustomerId($customerId);
-                            $paymentToken->setPublicHash($publicHash);
-
-                            $this->paymentTokenRepository->save($paymentToken);
-                            $output->writeln('Stored card saved with token ' . $cardToken);
-
-                        } else {
-                            $output->writeln('Formatted card data incomplete');
-                            $output->writeln('CARDTOKEN: ' . isset($formattedCardData['CARDTOKEN']));
-                            $output->writeln('CARDBRAND: ' . isset($formattedCardData['CARDBRAND']));
-                            $output->writeln('CARDNUMBER: ' . isset($formattedCardData['CARDNUMBER']));
-                            $output->writeln('EXPIRYYEAR: ' . isset($formattedCardData['EXPIRYYEAR']));
-                            $output->writeln('EXPIRYMONTH: ' . isset($formattedCardData['EXPIRYMONTH']));
-                            $output->writeln('CURRENCY: ' . isset($formattedCardData['CURRENCY']));
-                            
-                            $rowsWithErrors[$key] = $cardData;
+                        }catch (\Magento\Framework\Exception\NoSuchEntityException $e){
+                            $output->writeln("Customer ".$customerId ." does not exist skipping");
+                            continue;
                         }
+
+
+                        $output->writeln('Adding card ' . $formattedCardData['CARDNUMBER'] . ' for customer ' . $customerId);
+                        // create new stored card
+                        $cardToken = $formattedCardData['CARDTOKEN'];
+                        $cardBrand = $formattedCardData['CARDBRAND'];
+                        $cardNumber = $formattedCardData['CARDNUMBER'];
+                        $currency = $formattedCardData['CURRENCY'];
+                        $expiryDate = sprintf('%02d', $formattedCardData['EXPIRYMONTH']) . substr($formattedCardData['EXPIRYYEAR'], 2, 2) ;
+
+
+                        $paymentToken = $this->paymentTokenFactory->create();
+                        $paymentToken->setPaymentMethodCode('tns');
+                        $paymentToken->setGatewayToken($cardToken);
+                        $paymentToken->setExpiresAt($this->getExpirationDate($expiryDate));
+                        $paymentToken->setTokenDetails($this->convertDetailsToJSON([
+                            'type' => $cardBrand,
+                            'maskedCC' => $cardNumber,
+                            'expirationDate' => $expiryDate,
+                            'currency' => $currency
+                        ]));
+
+                        $paymentToken->setCustomerId($customerId);
+                        $paymentToken->setPublicHash($publicHash);
+
+                        $this->paymentTokenRepository->save($paymentToken);
+                        $output->writeln('Stored card saved with token ' . $cardToken);
+
+                    } else {
+                        $output->writeln('Formatted card data incomplete');
+                        $output->writeln('CARDTOKEN: ' . isset($formattedCardData['CARDTOKEN']));
+                        $output->writeln('CARDBRAND: ' . isset($formattedCardData['CARDBRAND']));
+                        $output->writeln('CARDNUMBER: ' . isset($formattedCardData['CARDNUMBER']));
+                        $output->writeln('EXPIRYYEAR: ' . isset($formattedCardData['EXPIRYYEAR']));
+                        $output->writeln('EXPIRYMONTH: ' . isset($formattedCardData['EXPIRYMONTH']));
+                        $output->writeln('CURRENCY: ' . isset($formattedCardData['CURRENCY']));
+
+                        // $rowsWithErrors[$key] = $cardData;
                     }
+                }
                 // }
             } catch (LocalizedException $e) {
-                $rowsWithErrors[$key] = $cardData;
                 $output->writeln($e->getMessage());
             } catch (\Exception $e) {
-                $rowsWithErrors[$key] = $cardData;
                 $output->writeln('Not able to import stored cards because: ');
                 $output->writeln($e->getMessage());
             }
